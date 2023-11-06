@@ -1,6 +1,10 @@
 import torch
+import pandas as pd
 
 import os
+from tqdm import tqdm
+import time
+import gc
 import wandb
 
 
@@ -112,25 +116,10 @@ class Trainer:
         val_pred = self.perform_epoch(is_train=False, is_test=True, stage_test=False) # val set
         test_pred = self.perform_epoch(is_train=False, is_test=True, stage_test=True) # test set
 
-        root_path = r'C:\Users\julia\Documents\masters\ml\data\ml3-aim-2023-hw2\hw2\tiny-imagenet-200'
-
         output = pd.DataFrame(columns=['id', 'pred'])
-        output['id'] = pd.read_csv(os.path.join(root_path, 'val', 'val_annotations.txt'),
-                header=None,
-                sep='\t',
-                usecols = [0]
-                ).values.flatten().tolist() + \
-                     sorted(os.listdir("./data/ml3-aim-2023-hw2/hw2/tiny-imagenet-200/test/images"), 
-                                 key=lambda x: int(x.split('_')[1].split('.')[0]))
-        
-
         output['pred'] = val_pred + test_pred
-
-
-        output = pd.read_csv(r'C:\Users\julia\Documents\masters\ml\data\ml3-aim-2023-hw2\hw2\sample_submission.csv',
-                             usecols=['id']).merge(output, on='id', how='left')
         
-        output.to_csv(f'./preds/hw2/{self.experiment}.csv', index=False)
+        output.to_csv(f'./prediction/{self.experiment}.csv', index=False)
 
     
 
@@ -195,20 +184,8 @@ class Trainer:
                 total_acc += one_batch_acc
                 total_n += 1
 
-                del batch_data
-                del batch_labels
-
-        if is_test:
-            # -------------------------CUSTOM-----------------------------------------
-            labels2classes = pd.read_csv(
-                os.path.join(root_path, 'wnids.txt'), 
-                header=None).to_dict()[0]
-            
-            output = [labels2classes[i] for i in predictions]
-            
-            # -------------------------CUSTOM-----------------------------------------
-        else:
-            output =  (total_loss / total_n, total_acc / total_n, (time.time() - start_time)/60)
+        
+        output =  (total_loss / total_n, total_acc / total_n, (time.time() - start_time)/60)
 
         gc.collect()
         torch.cuda.empty_cache() 
