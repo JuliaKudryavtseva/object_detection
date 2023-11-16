@@ -61,7 +61,7 @@ class Logger:
         self.val_acc_logger = EpochMeter("Validation accuracy")
         self.log_interval = log_interval
 
-        backends = [ DLLogger.StdOutBackend(DLLogger.Verbosity.DEFAULT) ]
+        backends = [DLLogger.StdOutBackend(DLLogger.Verbosity.DEFAULT)]
         if json_output:
             backends.append(DLLogger.JSONStreamBackend(DLLogger.Verbosity.VERBOSE, json_output))
 
