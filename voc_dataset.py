@@ -10,9 +10,12 @@ import cv2
 import os
 
 VOC_CLASSES = ('background','license_plate','car')
+ratio = 0.5
+
 
 default_transform = v2.Compose([
-        v2.ToImage(),
+        v2.ToImageTensor(),
+        v2.Resize((int(ratio*720), int(ratio*1280))),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
@@ -64,7 +67,7 @@ class VOCDetection(data.Dataset):
         boxes[:, 0::2] /=  width
         boxes[:, 1::2] /= height
         
-        return image, torch.from_numpy(boxes), torch.from_numpy(labels)
+        return image, ratio*torch.from_numpy(boxes), torch.from_numpy(labels)
     
     def __len__(self):
         return len(self.ids)
