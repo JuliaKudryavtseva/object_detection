@@ -10,7 +10,7 @@ import os
 
 from voc_dataloader      import get_train_dataloader, get_test_dataloader
 
-from model_resnet18  import SSD_ResNet18
+# from model_resnet18  import SSD_ResNet18
 from model_vgg16     import SSD_VGG16
 from multibox_loss   import MultiBoxLoss
 from prior_boxes     import prior_boxes
@@ -18,11 +18,11 @@ from logger          import Logger
 
 from tqdm import tqdm
 
-def make_parser():
+def make_parser(): 
     parser = argparse.ArgumentParser(description="Train Single Shot MultiBox Detector on custom dataset")
     parser.add_argument('--dataset_root_dir'     , type=str  , default='dataset'                )
-    parser.add_argument('--epochs'               , type=int  , default=100                      )
-    parser.add_argument('--batch_size'           , type=int  , default=8                        )
+    parser.add_argument('--epochs'               , type=int  , default=2                      )
+    parser.add_argument('--batch_size'           , type=int  , default=2                        )
     parser.add_argument('--checkpoint'           , type=str  , default=None                     )
     parser.add_argument('--output'               , type=str  , default='output'                 )
     parser.add_argument('--multistep' , nargs='*', type=int  , default=[20, 40, 60            ] )
@@ -30,7 +30,7 @@ def make_parser():
     parser.add_argument('--momentum'             , type=float, default=0.9                      )
     parser.add_argument('--weight-decay'         , type=float, default=0.0005                   )
     parser.add_argument('--warmup'               , type=int  , default=None                     )
-    parser.add_argument('--num-workers'          , type=int  , default=8                        )
+    parser.add_argument('--num-workers'          , type=int  , default=1                        )
     
     parser.add_argument('--seed'                 , type=int  , default=42                       )
     
@@ -71,7 +71,7 @@ def train_process(logger, args):
     '''
     custom_config = {
      'num_classes'  : 3,
-     'feature_maps' : [(90,160), (45,80), (23,40), (12,20), (10,18), (8,16)], #VGG16
+     'feature_maps' : [(90,160), (45,80), (23,40), (12,20), (10,18), (8,16)], # VGG16
      'min_sizes'    : [0.10, 0.20, 0.37, 0.54, 0.71, 1.00],
      'max_sizes'    : [0.20, 0.37, 0.54, 0.71, 1.00, 1.05],
      
@@ -94,19 +94,21 @@ def train_process(logger, args):
     neg_pos_ratio     = custom_config['neg_pos_ratio'    ]
     variance          = custom_config['variance']
 
-    criterion = MultiBoxLoss( overlap_threshold, neg_pos_ratio, variance)
-    model    .cuda()
+    criterion = MultiBoxLoss(overlap_threshold, neg_pos_ratio, variance)
+    model.cuda()
     criterion.cuda()
     
     optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay )
     scheduler = MultiStepLR(optimizer=optimizer, milestones=args.multistep, gamma=0.2)
     
     best_loc_loss, best_cls_loss, best_loss = np.inf, np.inf, np.inf
-    for epoch in tqdm(list(range(args.epochs))):
+    start = time.time()
+    for epoch in list(range(args.epochs)):
+        print(f'Epoch: {epoch}')
         #Train model
         train_loc_loss, train_cls_loss, train_loss = 0, 0, 0
         model.train()
-        for i , (image_s_cpu, box_ss_cpu, label_ss_cpu) in enumerate(train_dataloader):
+        for i , (image_s_cpu, box_ss_cpu, label_ss_cpu) in tqdm(enumerate(train_dataloader)):
             image_s_gpu  = image_s_cpu .cuda()
             label_ss_gpu = [ label_s_cpu.cuda() for label_s_cpu in label_ss_cpu ]
             box_ss_gpu   = [ box_s_cpu  .cuda() for box_s_cpu   in box_ss_cpu   ]
@@ -141,6 +143,7 @@ def train_process(logger, args):
             eval_cls_loss += cls_loss.item()
             eval_loss     += loss    .item()
         print('epoch[{}] | lr {:.5f} | loc_loss [{:.2f}/{:.2f}] | cls_loss [{:.2f}/{:.2f}] | total_loss [{:.2f}/{:.2f}]'.format(epoch, scheduler.get_last_lr()[0], train_loc_loss, eval_loc_loss, train_cls_loss, eval_cls_loss, train_loss, eval_loss))
+        print('Time: {:.2f}'.format(time.time()-start))
         if eval_loss < best_loss :
             torch.save(model.state_dict(), os.path.join(args.output, f"{custom_config['model_name']}.pth"))
             best_loc_loss, best_cls_loss, best_loss = eval_loc_loss, eval_cls_loss, eval_loss
