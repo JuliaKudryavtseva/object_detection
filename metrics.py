@@ -21,6 +21,9 @@ def AP(true_labels, pred_labels, true_boxes, pred_boxes, scores, class_instance,
     true_class_label = (true_labels == class_instance).astype(int)
     pred_class_label = (pred_labels == class_instance).astype(int)
 
+    if np.sum(true_class_label) == 0:
+        return None
+
 
     # filtering by IOU 
     IOUs = jaccard(true_boxes, pred_boxes) 
