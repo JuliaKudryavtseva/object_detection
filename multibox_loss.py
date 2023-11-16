@@ -124,10 +124,11 @@ if __name__ == '__main__':
     
     conf_s = torch.ones ( batch_size, num_priors, num_classes)
     loc_s  = torch.zeros( batch_size, num_priors,           4)
+    print(loc_s.shape, conf_s.shape, prior_box_s.shape)
  
     gt_label_s = [ torch.from_numpy( numpy.array([1, 2]) ) ]
     gt_box_s   = [ torch.from_numpy( numpy.array([[0.0, 0.0, 0.5, 0.5],[0.5, 0.5, 1.0, 1.0]]) ) ]
 
-    multi_box_loss = MultiBoxLoss( overlap_threshold, neg_pos_ratio)
+    multi_box_loss = MultiBoxLoss(overlap_threshold, neg_pos_ratio, custom_config['variance'])
     
-    print( multi_box_loss.forward((loc_s, conf_s, prior_box_s),(gt_label_s, gt_box_s)) )
+    print(multi_box_loss.forward((loc_s, conf_s, prior_box_s),(gt_label_s, gt_box_s)) )
