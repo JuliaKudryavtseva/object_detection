@@ -5,6 +5,7 @@ from prior_boxes     import jaccard
 
 def AP(true_labels, pred_labels, true_boxes, pred_boxes, scores, class_instance, treshold=0.8):
 
+
     # -------------- PREPROCESSING -------------------------------
 
     true_labels = torch.concat(true_labels).numpy().astype(int)
@@ -14,26 +15,30 @@ def AP(true_labels, pred_labels, true_boxes, pred_boxes, scores, class_instance,
 
     scores      = torch.concat(scores).numpy()
 
-    # -------------- SELECT CLASS -------------------------------
+    # ------------------------------------------------------------
+
+    # select class
     true_class_label = (true_labels == class_instance).astype(int)
     pred_class_label = (pred_labels == class_instance).astype(int)
 
-    if np.sum(true_class_label) == 0:
-        return None
 
-
-
+    # filtering by IOU 
     IOUs = jaccard(true_boxes, pred_boxes) 
-
     maxIOUS_values, maxIOUS_ind = IOUs.max(dim=0)
     treshold_maxIOUS_values = (maxIOUS_values > treshold).numpy()
-    proff_class = pred_class_label == true_class_label[maxIOUS_ind]
 
-    prediction_tp_fp = treshold_maxIOUS_values & proff_class
+    # select only relevant class
+    relevant_class_ind = true_class_label[maxIOUS_ind].astype(bool)
+    pred_class_label_selected = pred_class_label[relevant_class_ind]
+    proff_class = np.ones_like(pred_class_label_selected) == pred_class_label_selected
+    treshold_maxIOUS_values_selected = treshold_maxIOUS_values[relevant_class_ind]
+
+    # create array with TP and FP
+    prediction_tp_fp = treshold_maxIOUS_values_selected & proff_class
 
 
     # sort values in descending order
-    indices = scores.argsort(axis = 0).astype(int)[::-1].copy()
+    indices = scores[relevant_class_ind].argsort(axis = 0).astype(int)[::-1].copy()
     prediction_tp_fp = prediction_tp_fp[indices].astype(int)
 
     # calculate precision - recall
@@ -57,6 +62,7 @@ def AP(true_labels, pred_labels, true_boxes, pred_boxes, scores, class_instance,
     # calculate square under curve
     recall[1:] -= recall[:-1].copy()
     return np.sum(np.array(precision_max) * recall)
+
 
 
 def mAP(true_labels, pred_labels, true_boxes, pred_boxes, scores, num_class=3, treshold=0.8):
