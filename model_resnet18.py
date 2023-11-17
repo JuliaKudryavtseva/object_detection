@@ -11,7 +11,7 @@ import torch
 import copy
 
 
-class SSD_resnet18(nn.Module):
+class SSD_ResNet18(nn.Module):
     def __init__(self, num_bboxes_s, num_labels=3):
         super().__init__()
 
@@ -28,7 +28,7 @@ class SSD_resnet18(nn.Module):
         self.conf_layers, self.loc_layers = self._build_conf_loc_layers()
         
     def _build_base_layers(self):
-        backbone_model    = models.resnet18()  #False
+        backbone_model    = models.resnet18(weights=ResNet18_Weights.DEFAULT)  #False
 
         drop_layers = ['layer4', 'avgpool', 'fc']
         base_layers = [layer for name, layer in backbone_model.named_children() if name not in drop_layers]
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     model_graph  = draw_graph(model, input_size=(1, 3, 720, 1280), expand_nested=True)
     visual_graph = model_graph.visual_graph
     graph_svg = visual_graph.pipe(format='png')
-    with open('draft_output_resnet18.png', 'wb') as f:
+    with open('output_resnet18.png', 'wb') as f:
         f.write(graph_svg)
 
     print(output_locs .shape)
