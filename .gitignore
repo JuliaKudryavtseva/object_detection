@@ -1,3 +1,6 @@
 /dataset
 *.gz
 **/__pycache__/
+/checkpoints
+/output
+/wandb
