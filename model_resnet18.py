@@ -112,13 +112,13 @@ class SSD_ResNet18(nn.Module):
 if __name__ == '__main__':
     num_bboxes_s = [6, 6, 6, 6, 6, 6]
     
-    model = SSD_resnet18(num_bboxes_s, 3)
+    model = SSD_ResNet18(num_bboxes_s, 3)
     model.eval()
      
-    input_data  = torch.randn(1, 3, 720, 1280, dtype=torch.float, requires_grad=False)
+    input_data  = torch.randn(1, 3, 360, 640, dtype=torch.float, requires_grad=False)
     output_locs, output_confs = model( input_data )
     
-    model_graph  = draw_graph(model, input_size=(1, 3, 720, 1280), expand_nested=True)
+    model_graph  = draw_graph(model, input_size=(1, 3, 360, 640), expand_nested=True)
     visual_graph = model_graph.visual_graph
     graph_svg = visual_graph.pipe(format='png')
     with open('output_resnet18.png', 'wb') as f:
